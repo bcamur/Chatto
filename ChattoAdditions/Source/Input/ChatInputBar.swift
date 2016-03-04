@@ -31,10 +31,17 @@ protocol ChatInputBarDelegate: class {
     func inputBar(inputBar: ChatInputBar, didReceiveFocusOnItem item: ChatInputItemProtocol)
 }
 
+public protocol TypingEventsDelegate: class {
+    func typingStarted()
+    func typingStopped()
+    var typingExpirationInterval: NSTimeInterval { get }
+}
+
 @objc
 public class ChatInputBar: ReusableXibView {
 
     weak var delegate: ChatInputBarDelegate?
+    weak public var typingEventsDelegate: TypingEventsDelegate?
 
     @IBOutlet weak var scrollView: HorizontalStackScrollView!
     @IBOutlet weak var textView: ExpandableTextView!
@@ -136,6 +143,9 @@ public class ChatInputBar: ReusableXibView {
             self.textView.becomeFirstResponder()
         }
     }
+    
+    private var isTyping = false
+    private var isTypingTimer: NSTimer = NSTimer()
 
     public var inputText: String {
         get {
@@ -192,6 +202,30 @@ extension ChatInputBar { // Tabar
     }
 }
 
+// MARK: isTyping Events
+extension ChatInputBar {
+    public func evaluateTextChangeEvent() {
+        if let strongTypingEventsDelegate = self.typingEventsDelegate {
+            isTypingTimer.invalidate()  //invalidate timer task
+            
+            if !self.isTyping { //means user started writing or deleting something
+                self.isTyping = true
+                strongTypingEventsDelegate.typingStarted() //notify delegate about the typing started event
+            }
+            
+            //restart timer, if user doesn't change the text input again in 3 seconds, delegate will be notified about typing stopped event
+            isTypingTimer = NSTimer.scheduledTimerWithTimeInterval(strongTypingEventsDelegate.typingExpirationInterval, target: self, selector: Selector("triggerTypingStopped"), userInfo: nil, repeats: false)
+        }
+    }
+    
+    func triggerTypingStopped() {
+        if let strongTypingEventsDelegate = self.typingEventsDelegate {
+            isTyping = false
+            strongTypingEventsDelegate.typingStopped()
+        }
+    }
+}
+
 // MARK: UITextViewDelegate
 extension ChatInputBar: UITextViewDelegate {
     public func textViewDidEndEditing(textView: UITextView) {
@@ -204,6 +238,10 @@ extension ChatInputBar: UITextViewDelegate {
 
     public func textViewDidChange(textView: UITextView) {
         self.sendButton.enabled = !textView.text.isEmpty
+        
+        if let _ = self.typingEventsDelegate {
+            self.evaluateTextChangeEvent()
+        }
     }
 }
 
@@ -215,5 +253,4 @@ class SingleViewContainerView: UIView {
             return CGSize.zero
         }
     }
-
 }
