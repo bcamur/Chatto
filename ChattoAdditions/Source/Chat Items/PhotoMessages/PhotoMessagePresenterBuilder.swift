@@ -41,11 +41,11 @@ public class PhotoMessagePresenterBuilder<ViewModelBuilderT, InteractionHandlerT
             self.interactionHandler = interactionHandler
     }
 
-    let viewModelBuilder: ViewModelBuilderT
-    let interactionHandler: InteractionHandlerT?
+    public let viewModelBuilder: ViewModelBuilderT
+    public let interactionHandler: InteractionHandlerT?
     public lazy var sizingCell: PhotoMessageCollectionViewCell = PhotoMessageCollectionViewCell.sizingCell()
     public lazy var photoCellStyle: PhotoMessageCollectionViewCellStyleProtocol = PhotoMessageCollectionViewCellDefaultStyle()
-    public lazy var baseCellStyle: BaseMessageCollectionViewCellStyleProtocol = BaseMessageCollectionViewCellDefaultSyle()
+    public lazy var baseCellStyle: BaseMessageCollectionViewCellStyleProtocol = BaseMessageCollectionViewCellDefaultStyle()
 
     public func canHandleChatItem(chatItem: ChatItemProtocol) -> Bool {
         return self.viewModelBuilder.canCreateViewModel(fromModel: chatItem)

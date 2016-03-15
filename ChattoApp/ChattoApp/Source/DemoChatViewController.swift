@@ -41,7 +41,7 @@ class DemoChatViewController: BaseChatViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        let image = UIImage(named: "bubble-incoming-tail-border", inBundle: NSBundle(forClass: self.dynamicType), compatibleWithTraitCollection: nil)?.bma_tintWithColor(UIColor.blueColor())
+        let image = UIImage(named: "bubble-incoming-tail-border", inBundle: NSBundle(forClass: DemoChatViewController.self), compatibleWithTraitCollection: nil)?.bma_tintWithColor(UIColor.blueColor())
         super.chatItemsDecorator = ChatItemsDemoDecorator()
         let addIncomingMessageButton = UIBarButtonItem(image: image, style: .Plain, target: self, action: "addRandomIncomingMessage")
         self.navigationItem.rightBarButtonItem = addIncomingMessageButton
@@ -52,11 +52,11 @@ class DemoChatViewController: BaseChatViewController {
         self.dataSource.addRandomIncomingMessage()
     }
 
-    var chatInputPresenter: ChatInputBarPresenter!
+    var chatInputPresenter: BasicChatInputBarPresenter!
     override func createChatInputView() -> UIView {
         let chatInputView = ChatInputBar.loadNib()
         self.configureChatInputBar(chatInputView)
-        self.chatInputPresenter = ChatInputBarPresenter(chatInputView: chatInputView, chatInputItems: self.createChatInputItems())
+        self.chatInputPresenter = BasicChatInputBarPresenter(chatInputBar: chatInputView, chatInputItems: self.createChatInputItems())
         return chatInputView
     }
 
@@ -68,12 +68,14 @@ class DemoChatViewController: BaseChatViewController {
     }
 
     override func createPresenterBuilders() -> [ChatItemType: [ChatItemPresenterBuilderProtocol]] {
+        let textMessagePresenter = TextMessagePresenterBuilder(
+            viewModelBuilder: DemoTextMessageViewModelBuilder(),
+            interactionHandler: DemoTextMessageHandler(baseHandler: self.baseMessageHandler)
+        )
+        textMessagePresenter.baseMessageStyle = BaseMessageCollectionViewCellAvatarStyle()
         return [
             DemoTextMessageModel.chatItemType: [
-                TextMessagePresenterBuilder(
-                    viewModelBuilder: DemoTextMessageViewModelBuilder(),
-                    interactionHandler: DemoTextMessageHandler(baseHandler: self.baseMessageHandler)
-                )
+                textMessagePresenter
             ],
             DemoPhotoMessageModel.chatItemType: [
                 PhotoMessagePresenterBuilder(
@@ -81,7 +83,8 @@ class DemoChatViewController: BaseChatViewController {
                     interactionHandler: DemoPhotoMessageHandler(baseHandler: self.baseMessageHandler)
                 )
             ],
-            SendingStatusModel.chatItemType: [SendingStatusPresenterBuilder()]
+            SendingStatusModel.chatItemType: [SendingStatusPresenterBuilder()],
+            TimeSeparatorModel.chatItemType: [TimeSeparatorPresenterBuilder()]
         ]
     }
 

@@ -35,19 +35,28 @@ final class ChatItemsDemoDecorator: ChatItemsDecoratorProtocol {
 
     func decorateItems(chatItems: [ChatItemProtocol]) -> [DecoratedChatItem] {
         var decoratedChatItems = [DecoratedChatItem]()
+        let calendar = NSCalendar.currentCalendar()
 
         for (index, chatItem) in chatItems.enumerate() {
             let next: ChatItemProtocol? = (index + 1 < chatItems.count) ? chatItems[index + 1] : nil
+            let prev: ChatItemProtocol? = (index > 0) ? chatItems[index - 1] : nil
 
             let bottomMargin = self.separationAfterItem(chatItem, next: next)
             var showsTail = false
             var additionalItems =  [DecoratedChatItem]()
 
+            var addTimeSeparator = false
             if let currentMessage = chatItem as? MessageModelProtocol {
                 if let nextMessage = next as? MessageModelProtocol {
                     showsTail = currentMessage.senderId != nextMessage.senderId
                 } else {
                     showsTail = true
+                }
+
+                if let previousMessage = prev as? MessageModelProtocol {
+                    addTimeSeparator = calendar.compareDate(currentMessage.date, toDate: previousMessage.date, toUnitGranularity: NSCalendarUnit.Day) != NSComparisonResult.OrderedSame
+                } else {
+                    addTimeSeparator = true
                 }
 
                 if self.showsStatusForMessage(currentMessage) {
@@ -56,6 +65,11 @@ final class ChatItemsDemoDecorator: ChatItemsDecoratorProtocol {
                             chatItem: SendingStatusModel(uid: "\(currentMessage.uid)-decoration-status", status: currentMessage.status),
                             decorationAttributes: nil)
                     )
+                }
+
+                if addTimeSeparator {
+                    let dateTimeStamp = DecoratedChatItem(chatItem: TimeSeparatorModel(uid: "\(currentMessage.uid)-time-separator", date: currentMessage.date.toWeekDayAndDateString()), decorationAttributes: nil)
+                    decoratedChatItems.append(dateTimeStamp)
                 }
             }
 
